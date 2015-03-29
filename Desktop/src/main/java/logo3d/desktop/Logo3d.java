@@ -33,6 +33,6 @@ public class Logo3d extends SimpleApplication {
 
     @Override
     public void simpleInitApp() {
-
+        getStateManager().attach(new MainScreen());
     }
 }
