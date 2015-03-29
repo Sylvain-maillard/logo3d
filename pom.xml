@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>logo3d</groupId>
+    <artifactId>parent</artifactId>
+    <version>1.0-SNAPSHOT</version>
+
+    <packaging>pom</packaging>
+
+    <modules>
+        <module>Desktop</module>
+    </modules>
+
+    <repositories>
+        <repository>
+            <id>j3m</id>
+            <url>http://updates.jmonkeyengine.org/maven/</url>
+        </repository>
+        <repository>
+            <id>nifty-maven-repo.sourceforge.net</id>
+            <url>http://nifty-gui.sourceforge.net/nifty-maven-repo</url>
+        </repository>
+    </repositories>
+
+    <properties>
+        <jme3-core.version>3.0.10</jme3-core.version>
+        <slf4j-api.version>1.7.10</slf4j-api.version>
+    </properties>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>com.jme3</groupId>
+                <artifactId>jme3-core</artifactId>
+                <version>${jme3-core.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.jme3</groupId>
+                <artifactId>jme3-desktop</artifactId>
+                <version>${jme3-core.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.jme3</groupId>
+                <artifactId>jme3-lwjgl</artifactId>
+                <version>${jme3-core.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.jme3</groupId>
+                <artifactId>jme3-plugins</artifactId>
+                <version>${jme3-core.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.jme3</groupId>
+                <artifactId>jme3-jogg</artifactId>
+                <version>${jme3-core.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.jme3</groupId>
+                <artifactId>jme3-terrain</artifactId>
+                <version>${jme3-core.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.jme3</groupId>
+                <artifactId>jme3-blender</artifactId>
+                <version>${jme3-core.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.jme3</groupId>
+                <artifactId>jme3-niftygui</artifactId>
+                <version>${jme3-core.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.bushe</groupId>
+                <artifactId>eventbus</artifactId>
+                <version>1.4</version>
+            </dependency>
+
+            <!-- logging -->
+            <dependency>
+                <groupId>org.slf4j</groupId>
+                <artifactId>slf4j-api</artifactId>
+                <version>${slf4j-api.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.slf4j</groupId>
+                <artifactId>jul-to-slf4j</artifactId>
+                <version>${slf4j-api.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>ch.qos.logback</groupId>
+                <artifactId>logback-classic</artifactId>
+                <version>1.1.2</version>
+            </dependency>
+
+        </dependencies>
+    </dependencyManagement>
+
+</project>
