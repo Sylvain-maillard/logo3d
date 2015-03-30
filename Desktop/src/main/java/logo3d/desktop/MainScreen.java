@@ -31,6 +31,7 @@ public class MainScreen extends AbstractAppState implements ScreenController {
 
     private Node rootNode;
     private Turtle turtle;
+    private Paper paper;
 
     @Override
     public void initialize(AppStateManager stateManager, Application app) {
@@ -52,6 +53,9 @@ public class MainScreen extends AbstractAppState implements ScreenController {
 
         // setup turtle
         turtle = new Turtle(app.getAssetManager(), rootNode);
+
+        // setup paper
+        paper = new Paper(app.getAssetManager(), rootNode);
 
         // setup lights
         DirectionalLight sun1 = new DirectionalLight();
