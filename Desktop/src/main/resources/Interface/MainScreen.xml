@@ -1,28 +1,15 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<nifty xmlns="http://nifty-gui.sourceforge.net/nifty-1.3.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-        >
-
-    <!-- load styles -->
-    <useStyles filename="nifty-default-styles.xml"/>
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<nifty xmlns="http://nifty-gui.sourceforge.net/nifty-1.3.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
     <useControls filename="nifty-default-controls.xml"/>
-
-    <!-- ecran principal, d'accueil -->
+    <useStyles filename="nifty-default-styles.xml"/>
     <screen id="MainScreen" controller="logo3d.desktop.MainScreen">
-        <layer id="layer" backgroundColor="#0000" childLayout="center">
-
-            <panel width="80%" height="80%" align="center" valign="center" childLayout="vertical">
-                <panel id="titlePanel" height="40%" width="100%" align="center" backgroundColor="#ffdeccaa"
-                       childLayout="center">
-                    <effect>
-                        <onStartScreen name="move" mode="in" direction="left" length="300" startDelay="0" inherit="true"/>
-                        <onEndScreen name="move" mode="out" direction="right" length="300" startDelay="0" inherit="true"/>
-                    </effect>
-                    <control name="label" text="TEST"/>
-                </panel>
-
+        <layer childLayout="vertical" visible="true">
+            <!-- spacer panel -->
+            <panel childLayout="vertical" width="100%" height="85%" backgroundColor="#0000"/>
+            <panel valign="bottom" childLayout="horizontal" backgroundImage="panel/nifty-panel-simple.png" width="70%"  style="nifty-panel-simple" align="right">
+                <control name="label" width="100px" x="18" y="76" text="Commande" font="aurulent-sans-16.fnt"/>
+                <control name="nifty-console" id="consoleCommande" width="*" x="120" y="72" height="*"/>
             </panel>
-
         </layer>
     </screen>
-
 </nifty>
