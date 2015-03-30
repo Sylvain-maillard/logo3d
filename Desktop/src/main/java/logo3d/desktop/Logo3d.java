@@ -19,7 +19,7 @@ public class Logo3d extends SimpleApplication {
         bridgeJUL();
         LOG.debug("Starting...");
         Logo3d logo3d = new Logo3d();
-        logo3d.setShowSettings(false);
+//        logo3d.setShowSettings(false);
         logo3d.start();
     }
 

@@ -6,18 +6,21 @@ import com.jme3.app.state.AbstractAppState;
 import com.jme3.app.state.AppStateManager;
 import com.jme3.input.ChaseCamera;
 import com.jme3.light.DirectionalLight;
+import com.jme3.material.Material;
+import com.jme3.math.ColorRGBA;
 import com.jme3.math.Vector3f;
 import com.jme3.niftygui.NiftyJmeDisplay;
-import com.jme3.scene.CameraNode;
+import com.jme3.scene.Geometry;
+import com.jme3.scene.Mesh;
 import com.jme3.scene.Node;
-import com.jme3.scene.control.CameraControl;
+import com.jme3.scene.Spatial;
+import com.jme3.scene.debug.Arrow;
 import com.jme3.util.SkyFactory;
 import de.lessvoid.nifty.Nifty;
 import de.lessvoid.nifty.NiftyEventSubscriber;
 import de.lessvoid.nifty.controls.ConsoleExecuteCommandEvent;
 import de.lessvoid.nifty.screen.Screen;
 import de.lessvoid.nifty.screen.ScreenController;
-import de.lessvoid.nifty.sound.SoundSystem;
 import org.slf4j.Logger;
 
 import static org.slf4j.LoggerFactory.getLogger;
@@ -30,12 +33,13 @@ public class MainScreen extends AbstractAppState implements ScreenController {
     private static final Logger LOG = getLogger(MainScreen.class);
 
     private Node rootNode;
-    private Turtle turtle;
-    private Paper paper;
+    private TurtleControl turtleControl;
+    private SimpleApplication app;
 
     @Override
     public void initialize(AppStateManager stateManager, Application app) {
         super.initialize(stateManager, app);
+        this.app = (SimpleApplication)app;
 
         // setup gui.
         NiftyJmeDisplay niftyDisplay = new NiftyJmeDisplay(app.getAssetManager(),
@@ -51,11 +55,11 @@ public class MainScreen extends AbstractAppState implements ScreenController {
         rootNode = ((SimpleApplication)app).getRootNode();
         rootNode.attachChild(SkyFactory.createSky(app.getAssetManager(), "Skybox/Skybox.dds", false));
 
-        // setup turtle
-        turtle = new Turtle(app.getAssetManager(), rootNode);
+        // setup turtleControl
+        this.turtleControl = new TurtleControl(app.getAssetManager(), rootNode);
 
         // setup paper
-        paper = new Paper(app.getAssetManager(), rootNode);
+        new Paper(app.getAssetManager(), rootNode);
 
         // setup lights
         DirectionalLight sun1 = new DirectionalLight();
@@ -66,13 +70,35 @@ public class MainScreen extends AbstractAppState implements ScreenController {
         // Disable the default flyby cam
         ((SimpleApplication) app).getFlyByCamera().setEnabled(false);
 
-        ChaseCamera chaseCam = new ChaseCamera(app.getCamera(), turtle.getTurtleSpatial(), app.getInputManager());
+        ChaseCamera chaseCam = new ChaseCamera(app.getCamera(), this.turtleControl.getSpatial(), app.getInputManager());
         chaseCam.setSmoothMotion(true);
+
+        // setup debug axis
+        attachCoordinateAxes(Vector3f.UNIT_Y);
     }
 
-    @Override
-    public void update(float tpf) {
-        super.update(tpf);
+    private void attachCoordinateAxes(Vector3f pos){
+        Arrow arrow = new Arrow(Vector3f.UNIT_X);
+        arrow.setLineWidth(4); // make arrow thicker
+        putShape(arrow, ColorRGBA.Red).setLocalTranslation(pos);
+
+        arrow = new Arrow(Vector3f.UNIT_Y);
+        arrow.setLineWidth(4); // make arrow thicker
+        putShape(arrow, ColorRGBA.Green).setLocalTranslation(pos);
+
+        arrow = new Arrow(Vector3f.UNIT_Z);
+        arrow.setLineWidth(4); // make arrow thicker
+        putShape(arrow, ColorRGBA.Blue).setLocalTranslation(pos);
+    }
+
+    private Geometry putShape(Mesh shape, ColorRGBA color){
+        Geometry g = new Geometry("coordinate axis", shape);
+        Material mat = new Material(app.getAssetManager(), "Common/MatDefs/Misc/Unshaded.j3md");
+        mat.getAdditionalRenderState().setWireframe(true);
+        mat.setColor("Color", color);
+        g.setMaterial(mat);
+        rootNode.attachChild(g);
+        return g;
     }
 
     @Override
@@ -83,6 +109,12 @@ public class MainScreen extends AbstractAppState implements ScreenController {
     public void onConsoleExecuteCommandEvent(final String id, final ConsoleExecuteCommandEvent cEvent ){
         String consoleInput = cEvent.getCommandLine();
         LOG.debug(consoleInput);
+        switch (consoleInput.trim().toLowerCase()) {
+            case "avance" : turtleControl.forward(5); break;
+            case "recule" : turtleControl.backward(5); break;
+            case "tourne gauche" : turtleControl.turnLeft(); break;
+            case "tourne droite" : turtleControl.turnRight(); break;
+        }
     }
 
 
