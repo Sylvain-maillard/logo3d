@@ -13,7 +13,6 @@ import com.jme3.niftygui.NiftyJmeDisplay;
 import com.jme3.scene.Geometry;
 import com.jme3.scene.Mesh;
 import com.jme3.scene.Node;
-import com.jme3.scene.Spatial;
 import com.jme3.scene.debug.Arrow;
 import com.jme3.util.SkyFactory;
 import de.lessvoid.nifty.Nifty;
@@ -21,6 +20,7 @@ import de.lessvoid.nifty.NiftyEventSubscriber;
 import de.lessvoid.nifty.controls.ConsoleExecuteCommandEvent;
 import de.lessvoid.nifty.screen.Screen;
 import de.lessvoid.nifty.screen.ScreenController;
+import de.lessvoid.nifty.tools.Color;
 import org.slf4j.Logger;
 
 import static org.slf4j.LoggerFactory.getLogger;
@@ -35,6 +35,7 @@ public class MainScreen extends AbstractAppState implements ScreenController {
     private Node rootNode;
     private TurtleControl turtleControl;
     private SimpleApplication app;
+    private CommandInterpreter commandInterpreter;
 
     @Override
     public void initialize(AppStateManager stateManager, Application app) {
@@ -57,6 +58,7 @@ public class MainScreen extends AbstractAppState implements ScreenController {
 
         // setup turtleControl
         this.turtleControl = new TurtleControl(app.getAssetManager(), rootNode);
+        this.commandInterpreter = new CommandInterpreter(turtleControl);
 
         // setup paper
         new Paper(app.getAssetManager(), rootNode);
@@ -105,16 +107,12 @@ public class MainScreen extends AbstractAppState implements ScreenController {
     public void bind(Nifty nifty, Screen screen) {
     }
 
+    private static final Color RED = new Color("#f00");
+    private static final Color GREEN = new Color("#0f0");
+
     @NiftyEventSubscriber(id="consoleCommande")
     public void onConsoleExecuteCommandEvent(final String id, final ConsoleExecuteCommandEvent cEvent ){
-        String consoleInput = cEvent.getCommandLine();
-        LOG.debug(consoleInput);
-        switch (consoleInput.trim().toLowerCase()) {
-            case "avance" : turtleControl.forward(5); break;
-            case "recule" : turtleControl.backward(5); break;
-            case "tourne gauche" : turtleControl.turnLeft(); break;
-            case "tourne droite" : turtleControl.turnRight(); break;
-        }
+        commandInterpreter.interpret(cEvent);
     }
 
 

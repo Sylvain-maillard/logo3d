@@ -125,15 +125,15 @@ value
     ;
 
 signExpression
-    : (('+'|'-'))* (number | deref | func)
+    : ((PLUS|MINUS)?) (number | deref | func)
     ;
 
 multiplyingExpression
-    : signExpression (('*' | '/') signExpression)*
+    : signExpression ((MULT | DIVIDE) signExpression)*
     ;
 
 expression
-     : multiplyingExpression (('+'|'-') multiplyingExpression)*
+     : multiplyingExpression ((PLUS|MINUS) multiplyingExpression)*
      ;
 
 deref
@@ -218,6 +218,22 @@ STRING
 
 NUMBER
     : [0-9]+
+    ;
+
+PLUS
+    : '+'
+    ;
+
+MINUS
+    : '-'
+    ;
+
+MULT
+    : '*'
+    ;
+
+DIVIDE
+    : '/'
     ;
 
 COMMENT
