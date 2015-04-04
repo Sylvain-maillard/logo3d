@@ -50,12 +50,12 @@ public class CommandInterpreter {
 
             @Override
             public void reportAttemptingFullContext(Parser recognizer, DFA dfa, int startIndex, int stopIndex, BitSet conflictingAlts, ATNConfigSet configs) {
-                cEvent.getConsole().outputError("AttemptingFullContext");
+//                cEvent.getConsole().outputError("AttemptingFullContext");
             }
 
             @Override
             public void reportContextSensitivity(Parser recognizer, DFA dfa, int startIndex, int stopIndex, int prediction, ATNConfigSet configs) {
-                cEvent.getConsole().outputError("ContextSensitivity");
+//                cEvent.getConsole().outputError("ContextSensitivity");
             }
         });
 
@@ -73,6 +73,10 @@ public class CommandInterpreter {
                     float value1 = valueStack.pop();
                     float value2 = valueStack.pop();
                     valueStack.push(value1 + value2);
+                } else if (!ctx.MINUS().isEmpty()) {
+                    float value1 = valueStack.pop();
+                    float value2 = valueStack.pop();
+                    valueStack.push(value2 - value1);
                 }
             }
 
@@ -84,6 +88,10 @@ public class CommandInterpreter {
                     float value1 = valueStack.pop();
                     float value2 = valueStack.pop();
                     valueStack.push(value1 * value2);
+                } else if (!ctx.DIVIDE().isEmpty()) {
+                    float value1 = valueStack.pop();
+                    float value2 = valueStack.pop();
+                    valueStack.push(value2 / value1);
                 }
             }
 
@@ -96,12 +104,6 @@ public class CommandInterpreter {
 
                 }
             }
-
-            @Override
-            public void exitNumber(LogoParser.NumberContext ctx) {
-//                valueStack.push(createFloat(ctx.NUMBER().getText()));
-            }
-
 
             @Override
             public void exitFd(LogoParser.FdContext ctx) {

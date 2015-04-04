@@ -59,13 +59,13 @@ public class CommandInterpreterTest {
         // capture the call to move the turtle:
         ArgumentCaptor<Float> captor = forClass(Float.class);
 
-        ConsoleExecuteCommandEvent cEvent = new ConsoleExecuteCommandEvent(console, "fd 40 + 10");
+        ConsoleExecuteCommandEvent cEvent = new ConsoleExecuteCommandEvent(console, "fd 40 + 10 - 20");
         commandInterpreter.interpret(cEvent);
 
         // check that forward was called with the expected value.
         verify(turtleControl).forward(captor.capture());
         // expected:
-        assertThat(captor.getValue()).isEqualTo(50f);
+        assertThat(captor.getValue()).isEqualTo(30f);
 
     }
 
@@ -75,13 +75,29 @@ public class CommandInterpreterTest {
         // capture the call to move the turtle:
         ArgumentCaptor<Float> captor = forClass(Float.class);
 
-        ConsoleExecuteCommandEvent cEvent = new ConsoleExecuteCommandEvent(console, "fd 40 - 10");
+        ConsoleExecuteCommandEvent cEvent = new ConsoleExecuteCommandEvent(console, "fd 40-10");
         commandInterpreter.interpret(cEvent);
 
         // check that forward was called with the expected value.
         verify(turtleControl).forward(captor.capture());
         // expected:
         assertThat(captor.getValue()).isEqualTo(30f);
+
+    }
+
+    @Test
+    public void test_interprete_divide_expression() throws Exception {
+
+        // capture the call to move the turtle:
+        ArgumentCaptor<Float> captor = forClass(Float.class);
+
+        ConsoleExecuteCommandEvent cEvent = new ConsoleExecuteCommandEvent(console, "fd 40/10");
+        commandInterpreter.interpret(cEvent);
+
+        // check that forward was called with the expected value.
+        verify(turtleControl).forward(captor.capture());
+        // expected:
+        assertThat(captor.getValue()).isEqualTo(4f);
 
     }
 
