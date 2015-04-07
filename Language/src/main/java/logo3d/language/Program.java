@@ -4,6 +4,7 @@ import org.antlr.v4.runtime.*;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 
+import java.util.List;
 import java.util.Stack;
 
 import static org.apache.commons.lang3.StringUtils.substring;
@@ -43,7 +44,7 @@ public class Program {
         default void print(String msg) { LOG.info("Should print {}", msg);}
     }
 
-    void interpret(String sourceCode) {
+    public void interpret(String sourceCode) {
         // append EOL to finish the command
         String consoleInput = sourceCode + "\n";
         // parse the commande line:
@@ -166,7 +167,22 @@ public class Program {
 
         @Override
         public void exitFore(LogoParser.ForeContext ctx) {
+            List<LogoParser.ExpressionContext> list = ctx.expression();
+
+            Float stepExpression = valueStack.pop();
+            Float stopExpression = valueStack.pop();
+            Float startExpression = valueStack.pop();
+
             LOG.debug("boucle for en cours !! {}", ctx.getText());
+            for (Float i = startExpression; i < stopExpression; i+=stepExpression) {
+                // interpret block.
+                LOG.debug("doing block.");
+            }
+        }
+
+        @Override
+        public void exitBlock(LogoParser.BlockContext ctx) {
+            LOG.debug("exit block ! {}", ctx.getText());
         }
     }
 }

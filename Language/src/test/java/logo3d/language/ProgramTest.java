@@ -135,4 +135,17 @@ public class ProgramTest {
         assertThat(captor.getValue()).isEqualTo("4.0");
     }
 
+    @Test
+    public void test_for_loop() throws Exception {
+
+        ArgumentCaptor<Float> captor = ArgumentCaptor.forClass(Float.class);
+
+        program.interpret("for [i 9 13 1] [fd 1]");
+
+        // check that forward was called with the expected value.
+        verify(turtleControl, Mockito.times(3)).forward(captor.capture());
+        // expected:
+        assertThat(captor.getValue()).isEqualTo(1);
+    }
+
 }
