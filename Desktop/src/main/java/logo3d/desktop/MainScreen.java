@@ -17,10 +17,12 @@ import com.jme3.scene.debug.Arrow;
 import com.jme3.util.SkyFactory;
 import de.lessvoid.nifty.Nifty;
 import de.lessvoid.nifty.NiftyEventSubscriber;
+import de.lessvoid.nifty.controls.Console;
 import de.lessvoid.nifty.controls.ConsoleExecuteCommandEvent;
 import de.lessvoid.nifty.screen.Screen;
 import de.lessvoid.nifty.screen.ScreenController;
 import de.lessvoid.nifty.tools.Color;
+import logo3d.language.Program;
 import org.slf4j.Logger;
 
 import static org.slf4j.LoggerFactory.getLogger;
@@ -35,7 +37,9 @@ public class MainScreen extends AbstractAppState implements ScreenController {
     private Node rootNode;
     private TurtleControl turtleControl;
     private SimpleApplication app;
-    private CommandInterpreter commandInterpreter;
+    private Program program;
+
+    private Console console;
 
     @Override
     public void initialize(AppStateManager stateManager, Application app) {
@@ -49,6 +53,8 @@ public class MainScreen extends AbstractAppState implements ScreenController {
                 app.getGuiViewPort());
         niftyDisplay.getNifty().fromXml("Interface/" + getClass().getSimpleName() + ".xml", getClass().getSimpleName(), this);
 
+        console = niftyDisplay.getNifty().getCurrentScreen().findNiftyControl("consoleCommande", Console.class);
+
         // attach the nifty display to the gui view port as a processor
         app.getGuiViewPort().addProcessor(niftyDisplay);
 
@@ -58,7 +64,7 @@ public class MainScreen extends AbstractAppState implements ScreenController {
 
         // setup turtleControl
         this.turtleControl = new TurtleControl(app.getAssetManager(), rootNode);
-        this.commandInterpreter = new CommandInterpreter(turtleControl);
+        this.program = new Program(turtleControl, console::outputError);
 
         // setup paper
         new Paper(app.getAssetManager(), rootNode);
@@ -112,7 +118,7 @@ public class MainScreen extends AbstractAppState implements ScreenController {
 
     @NiftyEventSubscriber(id="consoleCommande")
     public void onConsoleExecuteCommandEvent(final String id, final ConsoleExecuteCommandEvent cEvent ){
-        commandInterpreter.interpret(cEvent);
+        program.interpret(cEvent.getCommandLine());
     }
 
 
