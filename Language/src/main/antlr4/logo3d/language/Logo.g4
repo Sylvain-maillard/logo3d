@@ -1,10 +1,13 @@
 /*
 BSD License
+
 Copyright (c) 2013, Tom Everett
 All rights reserved.
+
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions
 are met:
+
 1. Redistributions of source code must retain the above copyright
    notice, this list of conditions and the following disclaimer.
 2. Redistributions in binary form must reproduce the above copyright
@@ -13,6 +16,7 @@ are met:
 3. Neither the name of Tom Everett nor the names of its contributors
    may be used to endorse or promote products derived from this software
    without specific prior written permission.
+
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
 "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
 LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
@@ -26,11 +30,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-
 grammar Logo;
-
-@header {
-}
 
 prog
     : (line? EOL)+ line?
@@ -42,7 +42,7 @@ line
     | print comment?
     | procedureDeclaration
     ;
-
+     
 cmd
     : repeat
     | fd
@@ -87,7 +87,7 @@ repeat
 block
     : '[' cmd+ ']'
     ;
-
+    
 ife
     : 'if' comparison block
     ;
@@ -97,9 +97,9 @@ comparison
     ;
 
 comparisonOperator
-    : '<'
-    | '>'
-    | '='
+    : LT 
+    | GT 
+    | EQ
     ;
 
 make
@@ -121,20 +121,28 @@ name
 value
     : STRINGLITERAL
     | expression
-    | deref
+    | deref 
     ;
 
-signExpression
-    : ((PLUS|MINUS)?) (number | deref | func)
+/*
+signExpression 
+    : ((PLUS|MINUS))* (number | deref | func)
     ;
 
+/*
 multiplyingExpression
-    : signExpression ((MULT | DIVIDE) signExpression)*
+    : signExpression (op=(MULT | DIVIDE) signExpression)*
     ;
 
-expression
-     : multiplyingExpression ((PLUS|MINUS) multiplyingExpression)*
+expression 
+     : multiplyingExpression (op=(PLUS|MINUS) multiplyingExpression)*
      ;
+*/
+expression
+    : expression op=(PLUS|MINUS) expression      #additiveExpression
+    | expression op=(MULT | DIVIDE) expression   #multiplicationExpression
+    | ((PLUS|MINUS))* (number | deref | func)    #signExpression
+    ;
 
 deref
     : ':' name
@@ -183,7 +191,7 @@ home
 stop
     : 'stop'
     ;
-
+        
 label
     : 'label'
     ;
@@ -207,7 +215,7 @@ number
 comment
     : COMMENT
     ;
-
+     
 STRINGLITERAL
     : '"' STRING
     ;
@@ -215,25 +223,9 @@ STRINGLITERAL
 STRING
     : [a-zA-Z] [a-zA-Z0-9_]*
     ;
-
+    
 NUMBER
     : [0-9]+
-    ;
-
-PLUS
-    : '+'
-    ;
-
-MINUS
-    : '-'
-    ;
-
-MULT
-    : '*'
-    ;
-
-DIVIDE
-    : '/'
     ;
 
 COMMENT
@@ -243,6 +235,15 @@ COMMENT
 EOL
     : '\r'? '\n'
     ;
+    
+PLUS  : '+' ;
+MINUS : '-' ;
+DIVIDE: '/' ;
+MULT  : '*' ;
+
+LT : '<' ;
+GT : '>' ;
+EQ : '=' ;
 
 WS
     : [ \t\r\n]->skip

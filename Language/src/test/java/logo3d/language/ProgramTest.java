@@ -1,6 +1,5 @@
 package logo3d.language;
 
-import org.assertj.core.api.Assertions;
 import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
@@ -13,7 +12,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentCaptor.forClass;
 import static org.mockito.Mockito.verify;
 import static org.slf4j.LoggerFactory.getLogger;
 
@@ -28,7 +26,7 @@ public class ProgramTest {
     public MockitoRule mockitoRule = MockitoJUnit.rule();
 
     @Mock
-    Program.TurtleActionCallbacks turtleControl;
+    TurtleActionCallbacks turtleControl;
 
     @InjectMocks
     Program program;
@@ -48,6 +46,21 @@ public class ProgramTest {
         verify(turtleControl).forward(captor.capture());
         // expected:
         assertThat(captor.getValue()).isEqualTo(400f);
+
+    }
+
+    @Test
+    public void test_interprete_multiplication_expression_again() throws Exception {
+
+        // capture the call to move the turtle:
+        ArgumentCaptor<Float> captor = ArgumentCaptor.forClass(Float.class);
+
+        program.interpret("fd 40 * 10 / 10");
+
+        // check that forward was called with the expected value.
+        verify(turtleControl).forward(captor.capture());
+        // expected:
+        assertThat(captor.getValue()).isEqualTo(40f);
 
     }
 
@@ -143,9 +156,21 @@ public class ProgramTest {
         program.interpret("for [i 9 13 1] [fd 1]");
 
         // check that forward was called with the expected value.
-        verify(turtleControl, Mockito.times(3)).forward(captor.capture());
+        verify(turtleControl, Mockito.times(4)).forward(captor.capture());
         // expected:
         assertThat(captor.getValue()).isEqualTo(1);
     }
 
+    @Test
+    public void test_if_structure() throws Exception {
+
+        ArgumentCaptor<Float> captor = ArgumentCaptor.forClass(Float.class);
+
+        program.interpret("if 10 > 20 [fd 1]");
+
+        // check that forward was called with the expected value.
+        verify(turtleControl).forward(captor.capture());
+        // expected:
+        assertThat(captor.getValue()).isEqualTo(1);
+    }
 }

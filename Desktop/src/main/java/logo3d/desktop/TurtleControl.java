@@ -8,7 +8,7 @@ import com.jme3.renderer.RenderManager;
 import com.jme3.renderer.ViewPort;
 import com.jme3.scene.*;
 import com.jme3.scene.control.AbstractControl;
-import logo3d.language.Program;
+import logo3d.language.TurtleActionCallbacks;
 import org.slf4j.Logger;
 
 import static com.jme3.math.FastMath.PI;
@@ -17,7 +17,7 @@ import static org.slf4j.LoggerFactory.getLogger;
 /**
  * Created by SylvainMaillard on 30/03/2015.
  */
-public class TurtleControl extends AbstractControl implements Program.TurtleActionCallbacks {
+public class TurtleControl extends AbstractControl implements TurtleActionCallbacks {
 
     private static final Logger LOG = getLogger(TurtleControl.class);
 

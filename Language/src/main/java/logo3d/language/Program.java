@@ -2,12 +2,14 @@ package logo3d.language;
 
 import org.antlr.v4.runtime.*;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.math.NumberUtils;
 import org.slf4j.Logger;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Stack;
 
-import static org.apache.commons.lang3.StringUtils.substring;
 import static org.apache.commons.lang3.math.NumberUtils.createFloat;
 import static org.slf4j.LoggerFactory.getLogger;
 
@@ -21,27 +23,34 @@ public class Program {
     private final SyntaxErrorHandler syntaxErrorHandler;
     private final TurtleActionCallbacks turtleActionCallbacks;
 
+    private final LogoRuntime runtime;
+
+    // store variables (there's only one global scope!)
+    private Map<String, LogoValue> memory = new HashMap<>();
+
+    private void inc(String var, float step){
+        LogoValue logoValue = memory.get(var);
+        if (logoValue != null) {
+            memory.put(var, new LogoValue(logoValue.asFloat() + step));
+        } else {
+            memory.put(var, new LogoValue(step));
+        }
+    }
+
+    private void set(String var, float value){
+        memory.put(var, new LogoValue(value));
+    }
+
     public Program(TurtleActionCallbacks turtleActionCallbacks, SyntaxErrorHandler syntaxErrorHandler) {
         this.turtleActionCallbacks = turtleActionCallbacks;
         this.syntaxErrorHandler = syntaxErrorHandler;
+        this.runtime = new LogoRuntime();
     }
 
     public Program(TurtleActionCallbacks turtleActionCallbacks) {
         this(turtleActionCallbacks, syntaxErrorMsg -> {
             LOG.error("Syntax error: {}", syntaxErrorMsg);
         });
-    }
-
-    public interface SyntaxErrorHandler {
-        void onSyntaxError(String msg);
-    }
-
-    public interface TurtleActionCallbacks {
-        default void forward(float value) { LOG.info("Should forward by {}", value);}
-        default void backward(float value) { LOG.info("Should backward by {}", value);}
-        default void turnLeft(float degree) { LOG.info("Should turn left by {} degree", degree);}
-        default void turnRight(float degree) { LOG.info("Should turn right by {} degree", degree);}
-        default void print(String msg) { LOG.info("Should print {}", msg);}
     }
 
     public void interpret(String sourceCode) {
@@ -59,130 +68,116 @@ public class Program {
             }
         });
 
-        // deal with expressions:
-        logoParser.addParseListener(new ExpressionsListener());
-
-        // deal with for loop:
-        logoParser.addParseListener(new ForListener());
-
-
-        logoParser.addParseListener(new LogoBaseListener() {
-            @Override
-            public void exitPrint(LogoParser.PrintContext ctx) {
-                if (ctx.value() != null) {
-                    turtleActionCallbacks.print(""+valueStack.peek());
-                } else {
-                    // strip leading and trailing [ and ]
-                    String s = "";
-                    String text = ctx.quotedstring().getText();
-                    if (text != null && text.length() > 2) {
-                        s = StringUtils.substring(text, 1, text.length() - 1);
-                    }
-                    turtleActionCallbacks.print(s);
-                }
-            }
-        });
-
-        // parse input.
-        logoParser.prog();
+        LogoParser.ProgContext prog = logoParser.prog();
+        ValueVisitor progVisitor = new ValueVisitor();
+        progVisitor.visit(prog);
     }
 
-    // current values stack
-    private Stack<Float> valueStack = new Stack<>();
-
-    private class ExpressionsListener extends LogoBaseListener {
+    class ValueVisitor extends LogoBaseVisitor<LogoValue> {
 
         @Override
-        public void exitExpression(LogoParser.ExpressionContext ctx) {
-            if (valueStack.size() < 2) return;
-
-            if (!ctx.PLUS().isEmpty()) {
-                float value1 = valueStack.pop();
-                float value2 = valueStack.pop();
-                valueStack.push(value1 + value2);
-            } else if (!ctx.MINUS().isEmpty()) {
-                float value1 = valueStack.pop();
-                float value2 = valueStack.pop();
-                valueStack.push(value2 - value1);
-            }
-            LOG.debug("interpreting expression: {}, last stack value: {} ", ctx.getText(), valueStack.peek());
+        public LogoValue visitSignExpression(LogoParser.SignExpressionContext ctx) {
+            return new LogoValue(NumberUtils.createFloat(ctx.getText()));
         }
 
         @Override
-        public void exitMultiplyingExpression(LogoParser.MultiplyingExpressionContext ctx) {
-            if (valueStack.size() < 2) return;
+        public LogoValue visitAdditiveExpression(LogoParser.AdditiveExpressionContext ctx) {
+            LogoValue left = this.visit(ctx.expression(0));
+            LogoValue right = this.visit(ctx.expression(1));
 
-            if (!ctx.MULT().isEmpty()) {
-                float value1 = valueStack.pop();
-                float value2 = valueStack.pop();
-                valueStack.push(value1 * value2);
-            } else if (!ctx.DIVIDE().isEmpty()) {
-                float value1 = valueStack.pop();
-                float value2 = valueStack.pop();
-                valueStack.push(value2 / value1);
+            switch (ctx.op.getType()){
+                case LogoParser.PLUS  : return new LogoValue(left.asFloat() + right.asFloat());
+                case LogoParser.MINUS : return new LogoValue(left.asFloat() - right.asFloat());
+                default:
+                    throw new RuntimeException("unknown operator: " + LogoParser.VOCABULARY.getDisplayName(ctx.op.getType()));
             }
         }
 
         @Override
-        public void exitSignExpression(LogoParser.SignExpressionContext ctx) {
-            if (ctx.number() != null) {
-                valueStack.push(createFloat(ctx.getText()));
+        public LogoValue visitMultiplicationExpression(LogoParser.MultiplicationExpressionContext ctx) {
+            LogoValue left = this.visit(ctx.expression(0));
+            LogoValue right = this.visit(ctx.expression(1));
+
+            switch (ctx.op.getType()) {
+                case LogoParser.MULT:
+                    return new LogoValue(left.asFloat() * right.asFloat());
+                case LogoParser.DIVIDE:
+                    return new LogoValue(left.asFloat() / right.asFloat());
+                default:
+                    throw new RuntimeException("unknown operator: " + LogoParser.VOCABULARY.getDisplayName(ctx.op.getType()));
+            }
+        }
+
+        @Override
+        public LogoValue visitFd(LogoParser.FdContext ctx) {
+            LogoValue value = this.visit(ctx.expression());
+            if (value.asFloat() < 0f) {
+                turtleActionCallbacks.backward(-value.asFloat());
             } else {
-                // not implemented for the moment;
-
+                turtleActionCallbacks.forward(value.asFloat());
             }
+            return LogoValue.VOID;
         }
 
         @Override
-        public void exitFd(LogoParser.FdContext ctx) {
-            if (valueStack.size() < 1) return;
-            Float currentRegistry = valueStack.pop();
-            if (currentRegistry < 0) {
-                turtleActionCallbacks.backward(-currentRegistry);
-            } else {
-                turtleActionCallbacks.forward(currentRegistry);
+        public LogoValue visitPrint(LogoParser.PrintContext ctx) {
+
+            if (ctx.quotedstring() != null) {
+                turtleActionCallbacks.print(this.visit(ctx.quotedstring()).asString());
+            } else if (ctx.value() != null) {
+                turtleActionCallbacks.print(this.visit(ctx.value()).asString());
             }
+            return LogoValue.VOID;
         }
 
         @Override
-        public void exitBk(LogoParser.BkContext ctx) {
-            if (valueStack.size() < 1) return;
-            turtleActionCallbacks.backward(valueStack.pop());
+        public LogoValue visitValue(LogoParser.ValueContext ctx) {
+            return this.visit(ctx.expression());
         }
 
         @Override
-        public void exitLt(LogoParser.LtContext ctx) {
-            if (valueStack.size() < 1) return;
-            turtleActionCallbacks.turnLeft(valueStack.pop());
+        public LogoValue visitQuotedstring(LogoParser.QuotedstringContext ctx) {
+            // strip leading and trailing [ and ]
+            String s = "";
+            String text = ctx.getText();
+            if (text != null && text.length() > 2) {
+                s = StringUtils.substring(text, 1, text.length() - 1);
+            }
+            return new LogoValue(s);
         }
 
         @Override
-        public void exitRt(LogoParser.RtContext ctx) {
-            if (valueStack.size() < 1) return;
-            turtleActionCallbacks.turnRight(valueStack.pop());
+        public LogoValue visitName(LogoParser.NameContext ctx) {
+            return new LogoValue(ctx.getText());
+        }
+
+        @Override
+        public LogoValue visitFore(LogoParser.ForeContext ctx) {
+
+            // for control name:
+            String controlLoopValueName = ctx.name().getText();
+
+            Float startIndex = this.visit(ctx.expression(0)).asFloat();
+            Float lastIndex = this.visit(ctx.expression(1)).asFloat();
+            Float step = this.visit(ctx.expression(2)).asFloat();
+
+            for (float i = startIndex; i < lastIndex; i += step) {
+
+                // update counter:
+                set(controlLoopValueName, i);
+
+                // do something.
+                this.visit(ctx.block());
+            }
+            return LogoValue.VOID;
         }
     }
 
-    private class ForListener extends LogoBaseListener{
+    public LogoRuntime getRuntime() {
+        return runtime;
+    }
 
-        @Override
-        public void exitFore(LogoParser.ForeContext ctx) {
-            List<LogoParser.ExpressionContext> list = ctx.expression();
-
-            Float stepExpression = valueStack.pop();
-            Float stopExpression = valueStack.pop();
-            Float startExpression = valueStack.pop();
-
-            LOG.debug("boucle for en cours !! {}", ctx.getText());
-            for (Float i = startExpression; i < stopExpression; i+=stepExpression) {
-                // interpret block.
-                LOG.debug("doing block.");
-            }
-        }
-
-        @Override
-        public void exitBlock(LogoParser.BlockContext ctx) {
-            LOG.debug("exit block ! {}", ctx.getText());
-        }
+    public interface SyntaxErrorHandler {
+        void onSyntaxError(String msg);
     }
 }
