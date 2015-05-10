@@ -78,6 +78,7 @@ public class TurtleControl extends AbstractControl implements TurtleActionCallba
         public TranslateAction(Direction activeDirection, float increment) {
             super(activeDirection);
             currentTranslationLimit = increment;
+            LOG.info("will translate {}, {}", activeDirection, increment);
         }
 
         @Override
@@ -125,7 +126,7 @@ public class TurtleControl extends AbstractControl implements TurtleActionCallba
         @Override
         void doIt(float tpf) {
 
-            LOG.debug("current slerp: {}, tpf {} , speed {}",currentSlerp, tpf, activeDirection.speedCoefficient);
+//            LOG.debug("current slerp: {}, tpf {} , speed {}",currentSlerp, tpf, activeDirection.speedCoefficient);
 
             currentSlerp += tpf * activeDirection.speedCoefficient;
 

@@ -162,6 +162,22 @@ public class ProgramTest {
     }
 
     @Test
+    public void test_for_loop_many_blocks() throws Exception {
+
+        ArgumentCaptor<Float> captorFd = ArgumentCaptor.forClass(Float.class);
+        ArgumentCaptor<Float> captorRt = ArgumentCaptor.forClass(Float.class);
+
+        program.interpret("for [ i 1 10 1 ][ fd 1 rt 90 ]");
+
+        // check that forward was called with the expected value.
+        verify(turtleControl, Mockito.times(9)).forward(captorFd.capture());
+        verify(turtleControl, Mockito.times(9)).turnRight(captorRt.capture());
+        // expected:
+        assertThat(captorFd.getValue()).isEqualTo(1);
+        assertThat(captorRt.getValue()).isEqualTo(90);
+    }
+
+    @Test
     public void test_if_structure() throws Exception {
 
         ArgumentCaptor<Float> captor = ArgumentCaptor.forClass(Float.class);
