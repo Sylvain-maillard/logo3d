@@ -120,6 +120,29 @@ public class Program {
         }
 
         @Override
+        public LogoValue visitBk(LogoParser.BkContext ctx) {
+            LogoValue value = this.visit(ctx.expression());
+            if (value.asFloat() < 0f) {
+                turtleActionCallbacks.forward(-value.asFloat());
+            } else {
+                turtleActionCallbacks.backward(value.asFloat());
+            }
+            return LogoValue.VOID;
+        }
+
+        @Override
+        public LogoValue visitRt(LogoParser.RtContext ctx) {
+            turtleActionCallbacks.turnRight(this.visit(ctx.expression()).asFloat());
+            return LogoValue.VOID;
+        }
+
+        @Override
+        public LogoValue visitLt(LogoParser.LtContext ctx) {
+            turtleActionCallbacks.turnLeft(this.visit(ctx.expression()).asFloat());
+            return LogoValue.VOID;
+        }
+
+        @Override
         public LogoValue visitPrint(LogoParser.PrintContext ctx) {
 
             if (ctx.quotedstring() != null) {

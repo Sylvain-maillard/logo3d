@@ -3,6 +3,7 @@ package logo3d.desktop;
 import com.jme3.asset.AssetManager;
 import com.jme3.material.Material;
 import com.jme3.math.ColorRGBA;
+import com.jme3.math.Quaternion;
 import com.jme3.math.Vector3f;
 import com.jme3.renderer.RenderManager;
 import com.jme3.renderer.ViewPort;
@@ -10,6 +11,9 @@ import com.jme3.scene.*;
 import com.jme3.scene.control.AbstractControl;
 import logo3d.language.TurtleActionCallbacks;
 import org.slf4j.Logger;
+
+import java.util.Stack;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static com.jme3.math.FastMath.PI;
 import static org.slf4j.LoggerFactory.getLogger;
@@ -24,19 +28,14 @@ public class TurtleControl extends AbstractControl implements TurtleActionCallba
     private final Material lineMaterial;
     private final Node rootNode;
 
-    private float speed = 3f;
-    private TurtleAction currentAction = TurtleAction.IDLE;
-    private boolean startMoving = false;
-    private Vector3f initialPosition;
+    private float speed = 4f;
 
-    // initial direction set to X
+    // initial direction
     private Vector3f direction = Vector3f.UNIT_Z;
-    private final Node pivot;
-    private float currentTranslationLimit = 1.0f;
-    private float currentRotationLimit = PI /2;
+    private final Node turtle;
 
     public enum Direction {
-        LEFT(1), RIGHT(-1), FORWARD(-1), BACKWARD(1);
+        LEFT(1), RIGHT(1), FORWARD(-1), BACKWARD(1);
 
         public final float speedCoefficient;
 
@@ -45,9 +44,106 @@ public class TurtleControl extends AbstractControl implements TurtleActionCallba
         }
     }
 
-    public enum TurtleAction {
-        IDLE, TRANSLATE, TURN
+    public abstract class TurtleAction {
+
+        protected final Direction activeDirection;
+
+        private final AtomicBoolean done = new AtomicBoolean();
+
+        public TurtleAction(Direction activeDirection) {
+            this.activeDirection = activeDirection;
+            this.done.set(false);
+        }
+
+        abstract void doIt(float tpf);
+
+        public void start() {
+        }
+
+        public void setDone(boolean done) {
+            this.done.set(done);
+        }
+
+        public boolean isDone() {
+            return done.get();
+        }
     }
+
+    public class TranslateAction extends TurtleAction {
+
+        private Vector3f initialPosition;
+
+        private float currentTranslationLimit = 1.0f;
+
+        public TranslateAction(Direction activeDirection, float increment) {
+            super(activeDirection);
+            currentTranslationLimit = increment;
+        }
+
+        @Override
+        public void start() {
+            initialPosition = turtle.getLocalTranslation().clone();
+        }
+
+        @Override
+        void doIt(float tpf) {
+            turtle.move(direction.mult(speed * tpf * activeDirection.speedCoefficient));
+            // check if we have to stop
+            // get distance between current position and current one
+            float distance = initialPosition.distance(turtle.getLocalTranslation());
+            if (distance >= currentTranslationLimit) {
+                // stop !
+                LOG.debug("STOP ! distance = {}", distance);
+                // ok now draw:
+                draw(initialPosition);
+                setDone(true);
+            }
+        }
+    }
+
+    public class TurnAction extends TurtleAction {
+        private float currentRotation = 0f;
+        private float currentRotationLimit = PI /2;
+        private Quaternion localRotation;
+        private Quaternion targetRotation;
+        private float currentSlerp = 0f;
+
+        public TurnAction(Direction activeDirection, float degree) {
+            super(activeDirection);
+            this.currentRotationLimit = degree;
+            LOG.info("will turn {}, {} deg", activeDirection, degree);
+        }
+
+        @Override
+        public void start() {
+            localRotation = turtle.getLocalRotation().clone();
+            targetRotation = new Quaternion().fromAngles(0, toRadian(currentRotationLimit), 0).mult(localRotation);
+            LOG.debug("localRotation: {}",localRotation);
+            LOG.debug("target rotation  {}", targetRotation);
+        }
+
+        @Override
+        void doIt(float tpf) {
+
+            LOG.debug("current slerp: {}, tpf {} , speed {}",currentSlerp, tpf, activeDirection.speedCoefficient);
+
+            currentSlerp += tpf * activeDirection.speedCoefficient;
+
+            Quaternion thisRotation = new Quaternion();
+            thisRotation.slerp(localRotation, targetRotation, currentSlerp);
+
+            turtle.setLocalRotation(thisRotation);
+
+            if (currentSlerp >= 1.0f) {
+                direction = targetRotation.getRotationColumn(2);
+                turtle.setLocalRotation(targetRotation);
+                setDone(true);
+            }
+        }
+    }
+
+    private Stack<TurtleAction> actionQueue = new Stack<>();
+    private TurtleAction currentAction;
 
     public TurtleControl(AssetManager assetManager, Node rootNode) {
         Spatial spatial = assetManager.loadModel("Models/turtle/turtle.j3o");
@@ -60,14 +156,14 @@ public class TurtleControl extends AbstractControl implements TurtleActionCallba
         LOG.debug("{}",center);
 
 //Create the node to use as pivot
-        pivot = new Node();
-        pivot.setLocalTranslation(center.setY(0.1f));
-        pivot.attachChild(spatial);
+        turtle = new Node();
+        turtle.setLocalTranslation(center.setY(0.1f));
+        turtle.attachChild(spatial);
 
 //Reverse the pivot to match the center of the mesh
         spatial.setLocalTranslation(center.negate());
 
-        rootNode.attachChild(pivot);
+        rootNode.attachChild(turtle);
 
         // add material
         Material mat = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
@@ -77,45 +173,31 @@ public class TurtleControl extends AbstractControl implements TurtleActionCallba
         lineMaterial = mat;
     }
 
-    private float currentRotation = 0f;
-
     @Override
     protected void controlUpdate(float tpf) {
 
-        // if it is the first move, save initial point:
-        if (startMoving) {
-            startMoving = false;
-            initialPosition = pivot.getLocalTranslation().clone();
-        }
+        // if no action, do nothing
+        if (currentAction == null && actionQueue.isEmpty()) return;
 
-        switch (currentAction) {
-            case IDLE: return;
-            case TRANSLATE:
-                pivot.move(direction.mult(speed * tpf * activeDirection.speedCoefficient));
-                // check if we have to stop
-                // get distance between current position and current one
-                float distance = initialPosition.distance(pivot.getLocalTranslation());
-                if (distance >= currentTranslationLimit) {
-                    // stop !
-                    currentAction = TurtleAction.IDLE;
-                    LOG.debug("STOP ! distance = {}", distance);
-                    // ok now draw:
-                    draw(initialPosition);
-                }
-                break;
-            case TURN:
-                currentRotation += speed * tpf;
-                pivot.rotate(0, speed * tpf * activeDirection.speedCoefficient, 0);
-                // check if we have to stop
-                if (currentRotation >= currentRotationLimit) {
-                    currentAction = TurtleAction.IDLE;
-                    // reset current rotation
-                    currentRotation = 0;
-                    // update direction
-                    direction = pivot.getLocalRotation().getRotationColumn(2);;
-                }
-                break;
+        // if no action, but we got something to do:
+        if (currentAction == null) {
+            currentAction = actionQueue.pop();
+            currentAction.start();
         }
+        // progress the current action.
+        currentAction.doIt(tpf);
+
+        // check if it is finished
+        if (currentAction.isDone()) {
+            // set to null and we will pickup the next action on the next frame
+            currentAction = null;
+            LOG.debug("current action is done");
+        }
+    }
+
+    @Override
+    protected void controlRender(RenderManager rm, ViewPort vp) {
+
     }
 
     private float toDegree(float radian) {
@@ -125,34 +207,12 @@ public class TurtleControl extends AbstractControl implements TurtleActionCallba
         return degree / 180 * PI;
     }
 
-    @Override
-    protected void controlRender(RenderManager rm, ViewPort vp) {
-    }
-
-    private boolean changeState(TurtleAction newState) {
-        if (currentAction != TurtleAction.IDLE) {
-            LOG.info("an action is already on going! {}", currentAction);
-            return false;
-        }
-
-        currentAction = newState;
-        startMoving = true;
-
-        return true;
-    }
-
-    private Direction activeDirection;
-
     public void translate(Direction direction, float increment) {
-        changeState(TurtleAction.TRANSLATE);
-        currentTranslationLimit = increment;
-        activeDirection = direction;
+        actionQueue.push(new TranslateAction(direction, increment));
     }
 
     public void turn(Direction direction, float degree) {
-        changeState(TurtleAction.TURN);
-        currentRotationLimit = toRadian(degree);
-        activeDirection = direction;
+        actionQueue.push(new TurnAction(direction, degree));
     }
 
     public void forward(float i) {
@@ -185,7 +245,7 @@ public class TurtleControl extends AbstractControl implements TurtleActionCallba
         lineMesh.setMode(Mesh.Mode.Lines);
         lineMesh.setLineWidth(4);
 
-        Vector3f localTranslation = pivot.getLocalTranslation();
+        Vector3f localTranslation = turtle.getLocalTranslation();
         lineMesh.setBuffer(VertexBuffer.Type.Position, 3, new float[]{
                 prevPos.getX(), prevPos.getY(), prevPos.getZ(),
                 localTranslation.getX(), localTranslation.getY(), localTranslation.getZ()});
