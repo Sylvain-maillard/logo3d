@@ -26,7 +26,7 @@ public class Program {
     private final LogoRuntime runtime;
 
     // store variables (there's only one global scope!)
-    private Map<String, LogoValue> memory = new HashMap<>();
+    Map<String, LogoValue> memory = new HashMap<>();
 
     private void inc(String var, float step){
         LogoValue logoValue = memory.get(var);
@@ -77,6 +77,10 @@ public class Program {
 
         @Override
         public LogoValue visitSignExpression(LogoParser.SignExpressionContext ctx) {
+            // this is quite bad :(
+            if (ctx.deref() != null) {
+                return this.visit(ctx.deref());
+            }
             return new LogoValue(NumberUtils.createFloat(ctx.getText()));
         }
 
@@ -154,8 +158,40 @@ public class Program {
         }
 
         @Override
-        public LogoValue visitValue(LogoParser.ValueContext ctx) {
+        public LogoValue visitDeref(LogoParser.DerefContext ctx) {
+            String variableName = this.visit(ctx.name()).asString();
+            if (!memory.containsKey(variableName)) {
+                throw new RuntimeException("No such variable: " + variableName);
+            }
+            return memory.get(variableName);
+        }
+
+        @Override
+        public LogoValue visitDerefValue(LogoParser.DerefValueContext ctx) {
+            return this.visit(ctx.deref());
+        }
+
+        @Override
+        public LogoValue visitLiteralValue(LogoParser.LiteralValueContext ctx) {
+            return this.visit(ctx.stringliteral());
+        }
+
+        @Override
+        public LogoValue visitExpressionValue(LogoParser.ExpressionValueContext ctx) {
             return this.visit(ctx.expression());
+        }
+
+        @Override
+        public LogoValue visitStringliteral(LogoParser.StringliteralContext ctx) {
+            return new LogoValue(ctx.STRING().getText());
+        }
+
+        @Override
+        public LogoValue visitMake(LogoParser.MakeContext ctx) {
+            String variableName = this.visit(ctx.stringliteral()).asString();
+            LogoValue value = this.visit(ctx.value());
+            memory.put(variableName, value);
+            return LogoValue.VOID;
         }
 
         @Override
@@ -184,7 +220,7 @@ public class Program {
             Float lastIndex = this.visit(ctx.expression(1)).asFloat();
             Float step = this.visit(ctx.expression(2)).asFloat();
 
-            for (float i = startIndex; i < lastIndex; i += step) {
+            for (float i = startIndex; i <= lastIndex; i += step) {
 
                 // update counter:
                 set(controlLoopValueName, i);

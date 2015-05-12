@@ -170,11 +170,24 @@ public class ProgramTest {
         program.interpret("for [ i 1 10 1 ][ fd 1 rt 90 ]");
 
         // check that forward was called with the expected value.
-        verify(turtleControl, Mockito.times(9)).forward(captorFd.capture());
-        verify(turtleControl, Mockito.times(9)).turnRight(captorRt.capture());
+        verify(turtleControl, Mockito.times(10)).forward(captorFd.capture());
+        verify(turtleControl, Mockito.times(10)).turnRight(captorRt.capture());
         // expected:
         assertThat(captorFd.getValue()).isEqualTo(1);
         assertThat(captorRt.getValue()).isEqualTo(90);
+    }
+
+    @Test
+    public void test_for_loop_with_dereference() throws Exception {
+
+        ArgumentCaptor<Float> captorFd = ArgumentCaptor.forClass(Float.class);
+
+        program.interpret("for [ i 1 10 1 ][ fd :i ]");
+
+        // check that forward was called with the expected value.
+        verify(turtleControl, Mockito.times(10)).forward(captorFd.capture());
+        // expected:
+        assertThat(captorFd.getValue()).isEqualTo(10);
     }
 
     @Test
@@ -189,4 +202,25 @@ public class ProgramTest {
         // expected:
         assertThat(captor.getValue()).isEqualTo(1);
     }
+
+    @Test
+    public void test_reference() throws Exception {
+        program.interpret("make \"valeur 1");
+
+        // expect that the program use a variable named "valeur".
+        assertThat(program.memory.get("valeur")).isNotNull();
+        assertThat(program.memory.get("valeur").asFloat()).isEqualTo(1f);
+    }
+
+    @Test
+    public void test_dereference() throws Exception {
+
+        ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
+
+        program.interpret("make \"valeur 1\n print :valeur"); // -> should print "1"
+
+        verify(turtleControl).print(captor.capture());
+        assertThat(captor.getValue()).isEqualTo("1.0");
+    }
+
 }

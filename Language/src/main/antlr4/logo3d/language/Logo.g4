@@ -103,7 +103,7 @@ comparisonOperator
     ;
 
 make
-    : 'make' STRINGLITERAL value
+    : 'make' stringliteral value
     ;
 
 print
@@ -119,9 +119,9 @@ name
     ;
 
 value
-    : STRINGLITERAL
-    | expression
-    | deref 
+    : stringliteral  #literalValue
+    | deref          #derefValue
+    | expression     #expressionValue
     ;
 
 /*
@@ -216,7 +216,7 @@ comment
     : COMMENT
     ;
      
-STRINGLITERAL
+stringliteral
     : '"' STRING
     ;
 

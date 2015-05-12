@@ -12,6 +12,8 @@ import com.jme3.scene.control.AbstractControl;
 import logo3d.language.TurtleActionCallbacks;
 import org.slf4j.Logger;
 
+import java.util.LinkedList;
+import java.util.Queue;
 import java.util.Stack;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -143,7 +145,8 @@ public class TurtleControl extends AbstractControl implements TurtleActionCallba
         }
     }
 
-    private Stack<TurtleAction> actionQueue = new Stack<>();
+    private Queue<TurtleAction> actionQueue = new LinkedList<>();
+
     private TurtleAction currentAction;
 
     public TurtleControl(AssetManager assetManager, Node rootNode) {
@@ -182,7 +185,7 @@ public class TurtleControl extends AbstractControl implements TurtleActionCallba
 
         // if no action, but we got something to do:
         if (currentAction == null) {
-            currentAction = actionQueue.pop();
+            currentAction = actionQueue.poll();
             currentAction.start();
         }
         // progress the current action.
@@ -209,11 +212,11 @@ public class TurtleControl extends AbstractControl implements TurtleActionCallba
     }
 
     public void translate(Direction direction, float increment) {
-        actionQueue.push(new TranslateAction(direction, increment));
+        actionQueue.offer(new TranslateAction(direction, increment));
     }
 
     public void turn(Direction direction, float degree) {
-        actionQueue.push(new TurnAction(direction, degree));
+        actionQueue.offer(new TurnAction(direction, degree));
     }
 
     public void forward(float i) {
